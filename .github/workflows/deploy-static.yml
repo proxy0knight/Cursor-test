@@ -1,0 +1,106 @@
+name: Deploy Static WordPress to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo
+        
+    - name: Setup WordPress
+      run: |
+        # Download WordPress
+        curl -O https://wordpress.org/latest.tar.gz
+        tar -xzf latest.tar.gz
+        mv wordpress/* .
+        rm -rf wordpress latest.tar.gz
+        
+        # Copy our custom theme
+        cp -r wp-content/themes/custom-theme wordpress/wp-content/themes/
+        
+        # Create wp-config.php for static generation
+        cat > wp-config.php << 'EOF'
+        <?php
+        define('DB_NAME', 'wordpress');
+        define('DB_USER', 'root');
+        define('DB_PASSWORD', '');
+        define('DB_HOST', 'localhost');
+        define('WP_DEBUG', false);
+        define('WP_DEBUG_LOG', false);
+        define('WP_DEBUG_DISPLAY', false);
+        define('SCRIPT_DEBUG', false);
+        define('WP_CACHE', false);
+        define('CONCATENATE_SCRIPTS', false);
+        define('COMPRESS_SCRIPTS', false);
+        define('COMPRESS_CSS', false);
+        define('ENFORCE_GZIP', false);
+        define('WP_POST_REVISIONS', false);
+        define('AUTOSAVE_INTERVAL', 300);
+        define('WP_AUTO_UPDATE_CORE', false);
+        define('DISALLOW_FILE_EDIT', true);
+        define('DISALLOW_FILE_MODS', true);
+        define('FORCE_SSL_ADMIN', false);
+        define('WP_HOME', 'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}');
+        define('WP_SITEURL', 'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}');
+        EOF
+        
+    - name: Install Simply Static Plugin
+      run: |
+        # Download Simply Static plugin
+        curl -L -o simply-static.zip https://downloads.wordpress.org/plugin/simply-static.latest-stable.zip
+        unzip simply-static.zip
+        mv simply-static wordpress/wp-content/plugins/
+        rm simply-static.zip
+        
+    - name: Generate Static Site
+      run: |
+        cd wordpress
+        # Create a simple script to generate static files
+        php -r "
+        // Basic WordPress bootstrap for static generation
+        require_once('wp-config.php');
+        require_once('wp-includes/wp-db.php');
+        require_once('wp-includes/pluggable.php');
+        
+        // Create static HTML files
+        \$pages = ['index', 'about', 'contact'];
+        foreach(\$pages as \$page) {
+            \$content = file_get_contents('wp-content/themes/custom-theme/index.php');
+            \$html = '<!DOCTYPE html>
+<html>
+<head>
+    <title>My WordPress Site - ' . ucfirst(\$page) . '</title>
+    <link rel=\"stylesheet\" href=\"wp-content/themes/custom-theme/style.css\">
+</head>
+<body>
+    <div class=\"container\">
+        <h1>Welcome to My WordPress Site</h1>
+        <p>This is the ' . \$page . ' page.</p>
+        <p>This is a static version of your WordPress site hosted on GitHub Pages!</p>
+    </div>
+</body>
+</html>';
+            file_put_contents(\$page . '.html', \$html);
+        }
+        "
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./wordpress
+        cname: # Optional: add your custom domain here
