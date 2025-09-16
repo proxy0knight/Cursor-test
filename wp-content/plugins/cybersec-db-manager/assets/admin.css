@@ -1,0 +1,355 @@
+/* CyberSec Database Manager Admin Styles */
+
+.cybersec-db-manager {
+    max-width: 1200px;
+}
+
+.cybersec-db-manager h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.cybersec-db-manager h1 .dashicons {
+    font-size: 32px;
+    color: #0073aa;
+}
+
+/* Status Cards */
+.cybersec-db-status {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.status-card {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-card .version,
+.status-card .count,
+.status-card .backup {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+}
+
+.status-card .count.success {
+    color: #46b450;
+}
+
+.status-card .count.error {
+    color: #dc3232;
+}
+
+/* Action Buttons */
+.cybersec-db-actions {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.action-card {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+}
+
+.action-card h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.action-card p {
+    margin: 0 0 20px 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+.action-card .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.action-card .button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.action-card .button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+}
+
+.action-card .button-secondary {
+    background: #f1f1f1;
+    border-color: #ccd0d4;
+    color: #333;
+}
+
+.action-card .button-secondary:hover {
+    background: #e1e1e1;
+}
+
+.action-status {
+    margin-top: 15px;
+    min-height: 40px;
+}
+
+.action-status .spinner {
+    float: none;
+    margin: 0 auto;
+}
+
+/* Info Grid */
+.cybersec-db-info {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.info-section {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.info-section h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 8px;
+}
+
+.info-section ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.info-section li {
+    padding: 5px 0;
+    color: #666;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.info-section li:last-child {
+    border-bottom: none;
+}
+
+/* Logs */
+.cybersec-db-logs {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.logs-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    background: #f8f9fa;
+    margin-top: 15px;
+}
+
+.log-entry {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e1e5e9;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry.info {
+    background: #e7f3ff;
+    color: #0066cc;
+}
+
+.log-entry.error {
+    background: #ffe7e7;
+    color: #cc0000;
+}
+
+.log-entry.warning {
+    background: #fff7e7;
+    color: #cc6600;
+}
+
+.log-level {
+    font-weight: bold;
+    min-width: 60px;
+    text-transform: uppercase;
+}
+
+.log-message {
+    flex: 1;
+}
+
+.no-logs {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Notices */
+.notice {
+    margin: 15px 0;
+    padding: 12px;
+    border-left: 4px solid;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.notice-success {
+    border-left-color: #46b450;
+}
+
+.notice-error {
+    border-left-color: #dc3232;
+}
+
+.notice-warning {
+    border-left-color: #ffb900;
+}
+
+.notice p {
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .status-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .cybersec-db-manager h1 {
+        font-size: 24px;
+    }
+    
+    .action-card .button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Loading States */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Spinner */
+.spinner {
+    background: url('data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"%3E%3Cpath fill="%230073aa" d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z" opacity=".2"/%3E%3Cpath fill="%230073aa" d="M10 2a8 8 0 0 1 8 8h-2a6 6 0 0 0-6-6V2z"%3E%3CanimateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite"/%3E%3C/path%3E%3C/svg%3E') no-repeat center center;
+    background-size: 20px 20px;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Code blocks */
+code {
+    background: #f1f1f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #d63384;
+}
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.mb-0 { margin-bottom: 0; }
+.mt-0 { margin-top: 0; }
+.p-0 { padding: 0; }
