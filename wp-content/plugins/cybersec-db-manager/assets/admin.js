@@ -45,6 +45,12 @@
             e.preventDefault();
             handleDatabaseAction('fix_database', $(this), $('#fix-status'));
         });
+
+        // Import Database
+        $('#import-database').on('click', function(e) {
+            e.preventDefault();
+            handleImportDatabase();
+        });
     }
 
     function handleDatabaseAction(actionType, $button, $status) {
@@ -86,10 +92,104 @@
             'build_database': cybersecDbAjax.strings.confirm_build,
             'remove_database': cybersecDbAjax.strings.confirm_remove,
             'export_database': cybersecDbAjax.strings.confirm_export,
-            'fix_database': cybersecDbAjax.strings.confirm_fix
+            'fix_database': cybersecDbAjax.strings.confirm_fix,
+            'import_database': 'Are you sure you want to import this database? A backup will be created automatically before import.'
         };
         
         return messages[actionType] || 'Are you sure?';
+    }
+
+    function handleImportDatabase() {
+        var $fileInput = $('#import-file');
+        var $button = $('#import-database');
+        var $status = $('#import-status');
+        
+        // Check if file is selected
+        if ($fileInput[0].files.length === 0) {
+            showStatusError($status, 'Please select a SQL file to import.');
+            return;
+        }
+        
+        var file = $fileInput[0].files[0];
+        
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            showStatusError($status, 'Please select a valid SQL file (.sql extension).');
+            return;
+        }
+        
+        // Validate file size (50MB limit)
+        if (file.size > 50 * 1024 * 1024) {
+            showStatusError($status, 'File too large. Maximum size is 50MB.');
+            return;
+        }
+        
+        // Get confirmation
+        var confirmMessage = getConfirmMessage('import_database');
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // Create FormData for file upload
+        var formData = new FormData();
+        formData.append('action', 'cybersec_db_action');
+        formData.append('action_type', 'import_database');
+        formData.append('nonce', cybersecDbAjax.nonce);
+        formData.append('import_file', file);
+        
+        // Set loading state
+        setButtonLoading($button, true);
+        showStatusLoading($status);
+        
+        // Make AJAX request
+        $.ajax({
+            url: cybersecDbAjax.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            timeout: 300000, // 5 minutes timeout
+            success: function(response) {
+                handleImportResponse(response, $status);
+            },
+            error: function(xhr, status, error) {
+                handleActionError(error, $button, $status);
+            },
+            complete: function() {
+                setButtonLoading($button, false);
+                $fileInput.val(''); // Clear file input
+            }
+        });
+    }
+
+    function handleImportResponse(response, $status) {
+        if (response.success) {
+            showStatusSuccess($status, response.message);
+            
+            // Show imported tables if available
+            if (response.imported_tables && response.imported_tables.length > 0) {
+                var tablesHtml = '<div class="imported-tables">';
+                tablesHtml += '<h4>Imported Tables:</h4>';
+                tablesHtml += '<ul>';
+                response.imported_tables.forEach(function(table) {
+                    tablesHtml += '<li>' + escapeHtml(table) + '</li>';
+                });
+                tablesHtml += '</ul></div>';
+                $status.append(tablesHtml);
+            }
+            
+            // Reload page after successful import
+            setTimeout(function() {
+                window.location.reload();
+            }, 3000);
+        } else {
+            showStatusError($status, response.message);
+            
+            // Show detailed errors if available
+            if (response.errors && response.errors.length > 0) {
+                showDetailedErrors($status, response.errors);
+            }
+        }
     }
 
     function handleActionResponse(response, $button, $status, actionType) {

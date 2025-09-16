@@ -507,6 +507,180 @@ class CyberSecDBManager {
         // Implementation for adding missing fields
         // This would read from schema and add the specific field
     }
+    
+    private function import_database() {
+        global $wpdb;
+        
+        $this->log_info('Starting database import process');
+        
+        // Check if file was uploaded
+        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception('No file uploaded or upload error occurred');
+        }
+        
+        $uploaded_file = $_FILES['import_file'];
+        
+        // Validate file type
+        $file_extension = strtolower(pathinfo($uploaded_file['name'], PATHINFO_EXTENSION));
+        if ($file_extension !== 'sql') {
+            throw new Exception('Invalid file type. Please upload a .sql file');
+        }
+        
+        // Validate file size (max 50MB)
+        if ($uploaded_file['size'] > 50 * 1024 * 1024) {
+            throw new Exception('File too large. Maximum size is 50MB');
+        }
+        
+        // Read the SQL file
+        $sql_content = file_get_contents($uploaded_file['tmp_name']);
+        if (!$sql_content) {
+            throw new Exception('Could not read the uploaded file');
+        }
+        
+        // Validate SQL content
+        if (!$this->validate_sql_content($sql_content)) {
+            throw new Exception('Invalid SQL file format or content');
+        }
+        
+        // Create backup before import
+        $backup_result = $this->create_backup_before_import();
+        if (!$backup_result['success']) {
+            throw new Exception('Failed to create backup before import: ' . $backup_result['message']);
+        }
+        
+        // Split SQL into individual queries
+        $queries = $this->split_sql_queries($sql_content);
+        
+        $executed_queries = 0;
+        $errors = array();
+        $imported_tables = array();
+        
+        foreach ($queries as $query) {
+            $query = trim($query);
+            if (empty($query) || strpos($query, '--') === 0) {
+                continue;
+            }
+            
+            try {
+                $wpdb->query($query);
+                $executed_queries++;
+                
+                // Track imported tables
+                if (preg_match('/CREATE TABLE.*?`?(\w+)`?/i', $query, $matches)) {
+                    $imported_tables[] = $matches[1];
+                }
+                
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+                $this->log_error('Import query failed: ' . $query . ' - Error: ' . $e->getMessage());
+            }
+        }
+        
+        // Update schema version if import was successful
+        if (empty($errors)) {
+            update_option('cybersec_db_manager_schema_version', '1.1.0');
+        }
+        
+        $this->log_info("Database import completed. Executed {$executed_queries} queries, imported " . count($imported_tables) . " tables");
+        
+        if (!empty($errors)) {
+            return array(
+                'success' => false,
+                'message' => 'Database imported with ' . count($errors) . ' errors. Check logs for details.',
+                'errors' => $errors,
+                'imported_tables' => $imported_tables
+            );
+        }
+        
+        return array(
+            'success' => true,
+            'message' => "Database imported successfully! Executed {$executed_queries} queries, imported " . count($imported_tables) . " tables.",
+            'imported_tables' => $imported_tables
+        );
+    }
+    
+    private function validate_sql_content($sql_content) {
+        // Basic validation of SQL content
+        $required_patterns = array(
+            '/CREATE TABLE/i',
+            '/INSERT INTO/i'
+        );
+        
+        foreach ($required_patterns as $pattern) {
+            if (!preg_match($pattern, $sql_content)) {
+                return false;
+            }
+        }
+        
+        // Check for potentially dangerous operations
+        $dangerous_patterns = array(
+            '/DROP DATABASE/i',
+            '/DELETE FROM.*users/i',
+            '/TRUNCATE TABLE.*users/i'
+        );
+        
+        foreach ($dangerous_patterns as $pattern) {
+            if (preg_match($pattern, $sql_content)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private function create_backup_before_import() {
+        try {
+            $this->log_info('Creating backup before import');
+            
+            $tables = $this->get_cybersec_tables();
+            $backup_data = array();
+            
+            foreach ($tables as $table) {
+                if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") == $table) {
+                    // Get table structure
+                    $create_table = $wpdb->get_row("SHOW CREATE TABLE {$table}", ARRAY_A);
+                    if ($create_table) {
+                        $backup_data[] = "-- Table structure for table `{$table}`";
+                        $backup_data[] = "DROP TABLE IF EXISTS `{$table}`;";
+                        $backup_data[] = $create_table['Create Table'] . ";";
+                        $backup_data[] = "";
+                        
+                        // Get table data
+                        $rows = $wpdb->get_results("SELECT * FROM {$table}", ARRAY_A);
+                        if (!empty($rows)) {
+                            $backup_data[] = "-- Data for table `{$table}`";
+                            foreach ($rows as $row) {
+                                $values = array();
+                                foreach ($row as $value) {
+                                    $values[] = $wpdb->prepare('%s', $value);
+                                }
+                                $backup_data[] = "INSERT INTO `{$table}` VALUES (" . implode(', ', $values) . ");";
+                            }
+                            $backup_data[] = "";
+                        }
+                    }
+                }
+            }
+            
+            // Save backup
+            $filename = 'pre_import_backup_' . date('Y-m-d_H-i-s') . '.sql';
+            $filepath = CYBERSEC_DB_MANAGER_PLUGIN_DIR . 'backups/' . $filename;
+            
+            file_put_contents($filepath, implode("\n", $backup_data));
+            
+            return array(
+                'success' => true,
+                'message' => 'Backup created successfully',
+                'filename' => $filename
+            );
+            
+        } catch (Exception $e) {
+            return array(
+                'success' => false,
+                'message' => $e->getMessage()
+            );
+        }
+    }
 }
 
 // Initialize the plugin

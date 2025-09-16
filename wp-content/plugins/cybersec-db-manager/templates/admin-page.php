@@ -103,6 +103,20 @@ if (!defined('ABSPATH')) {
                 <div class="action-status" id="fix-status"></div>
             </div>
 
+            <!-- Import Database -->
+            <div class="action-card">
+                <h3>Import Database</h3>
+                <p>Import database from a SQL file. A backup will be created automatically before import.</p>
+                <form id="import-form" enctype="multipart/form-data">
+                    <input type="file" id="import-file" name="import_file" accept=".sql" required>
+                    <button type="button" class="button button-secondary button-large" id="import-database">
+                        <span class="dashicons dashicons-upload"></span>
+                        Import Database
+                    </button>
+                </form>
+                <div class="action-status" id="import-status"></div>
+            </div>
+
         </div>
     </div>
 
@@ -289,6 +303,84 @@ jQuery(document).ready(function($) {
                 $status.html('<div class="notice notice-error"><p>' + response.message + '</p></div>');
             }
             $button.prop('disabled', false).html('<span class="dashicons dashicons-admin-tools"></span> Fix Database');
+        });
+    });
+    
+    // Import Database
+    $('#import-database').on('click', function() {
+        var $fileInput = $('#import-file');
+        var $button = $(this);
+        var $status = $('#import-status');
+        
+        // Check if file is selected
+        if ($fileInput[0].files.length === 0) {
+            $status.html('<div class="notice notice-error"><p>Please select a SQL file to import.</p></div>');
+            return;
+        }
+        
+        var file = $fileInput[0].files[0];
+        
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            $status.html('<div class="notice notice-error"><p>Please select a valid SQL file (.sql extension).</p></div>');
+            return;
+        }
+        
+        // Validate file size (50MB limit)
+        if (file.size > 50 * 1024 * 1024) {
+            $status.html('<div class="notice notice-error"><p>File too large. Maximum size is 50MB.</p></div>');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to import this database? A backup will be created automatically before import.')) {
+            return;
+        }
+        
+        // Create FormData for file upload
+        var formData = new FormData();
+        formData.append('action', 'cybersec_db_action');
+        formData.append('action_type', 'import_database');
+        formData.append('nonce', cybersecDbAjax.nonce);
+        formData.append('import_file', file);
+        
+        $button.prop('disabled', true).text(cybersecDbAjax.strings.processing);
+        $status.html('<div class="spinner is-active"></div> Processing import...');
+        
+        $.ajax({
+            url: cybersecDbAjax.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            timeout: 300000, // 5 minutes timeout
+            success: function(response) {
+                if (response.success) {
+                    $status.html('<div class="notice notice-success"><p>' + response.message + '</p></div>');
+                    if (response.imported_tables && response.imported_tables.length > 0) {
+                        $status.append('<p><strong>Imported tables:</strong> ' + response.imported_tables.join(', ') + '</p>');
+                    }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 3000);
+                } else {
+                    $status.html('<div class="notice notice-error"><p>' + response.message + '</p></div>');
+                    if (response.errors && response.errors.length > 0) {
+                        var errorList = '<ul>';
+                        response.errors.forEach(function(error) {
+                            errorList += '<li>' + error + '</li>';
+                        });
+                        errorList += '</ul>';
+                        $status.append('<div class="notice notice-error"><p><strong>Detailed Errors:</strong></p>' + errorList + '</div>');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                $status.html('<div class="notice notice-error"><p>Import failed: ' + error + '</p></div>');
+            },
+            complete: function() {
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-upload"></span> Import Database');
+                $fileInput.val(''); // Clear file input
+            }
         });
     });
     
